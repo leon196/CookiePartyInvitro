@@ -1,9 +1,9 @@
 
 var attributes = {position:[],indices:{numComponents:2,data:[]},seed:{numComponents:4,data:[]}};
-var cubeCount = 100;
-var crossCount = 100;
-var circleCount = 100;
-var glassCount = 100;
+var cubeCount = 10;
+var crossCount = 10;
+var circleCount = 10;
+var glassCount = 10;
 var circleSegment = 16;
 
 for (var index = 0; index < cubeCount; ++index) {
