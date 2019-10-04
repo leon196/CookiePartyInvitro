@@ -9,9 +9,10 @@ float random (in vec2 st) { return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43
 
 void main() {
 	vec2 uv = texcoord;
-	gl_FragColor  = texture2D(frame0, uv)/motionFrames;
-	gl_FragColor += texture2D(frame1, uv)/motionFrames;
-	gl_FragColor += texture2D(frame2, uv)/motionFrames;
+	gl_FragColor  = texture2D(frame0, uv);
+	// gl_FragColor  = texture2D(frame0, uv)/motionFrames;
+	// gl_FragColor += texture2D(frame1, uv)/motionFrames;
+	// gl_FragColor += texture2D(frame2, uv)/motionFrames;
 	// gl_FragColor += texture2D(frame3, uv)/motionFrames;
 	// gl_FragColor += texture2D(frame4, uv)/motionFrames;
 	// gl_FragColor += texture2D(frame5, uv)/motionFrames;

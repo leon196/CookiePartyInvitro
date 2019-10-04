@@ -13,12 +13,13 @@ loadFiles(['screen.vert','motion.frag','blur.frag','screen.frag','geometry.vert'
 	const geometryQuad = twgl.createBufferInfoFromArrays(gl, {
 		position:[-1,-1,0,1,-1,0,-1,1,0,-1,1,0,1,-1,0,1,1,0] });
 	var timeElapsed = 0;
-	const divergence = 0.8;
-	var camera = [0,0,10];
-	var fieldOfView = 30;
+	const divergence = 0.2;
+	var camera = [5,2,3];
+	var target = [-3,-1,0];
+	var fieldOfView = 70;
 	var projection = m4.perspective(fieldOfView * Math.PI / 180, gl.canvas.width/gl.canvas.height, 0.01, 100.0);
 	var cameraLeft, cameraRight;
-	var motionFrames = 3;
+	var motionFrames = 1;
 	const uniforms = {
 		motionFrames: motionFrames,
 	};
@@ -40,8 +41,8 @@ loadFiles(['screen.vert','motion.frag','blur.frag','screen.frag','geometry.vert'
 		var deltaTime = elapsed - uniforms.time;
 		uniforms.time = elapsed;
 		
-		cameraLeft = m4.lookAt([-divergence+camera[0], camera[1], camera[2]], [0, 0, 0], [0, 1, 0]);
-		cameraRight = m4.lookAt([divergence+camera[0], camera[1], camera[2]], [0, 0, 0], [0, 1, 0]);
+		cameraLeft = m4.lookAt([-divergence+camera[0], camera[1], camera[2]], target, [0, 1, 0]);
+		cameraRight = m4.lookAt([divergence+camera[0], camera[1], camera[2]], target, [0, 1, 0]);
 
 		// draw anaglyph geometry
 		gl.bindFramebuffer(gl.FRAMEBUFFER, frames[currentFrame].framebuffer);
