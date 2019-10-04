@@ -1,8 +1,11 @@
+#version 300 es
 precision mediump float;
 
 uniform float time;
-uniform vec4 color;
+uniform vec4 tint;
+
+out vec4 color;
 
 void main() {
-	gl_FragColor = vec4(color);
+	color = vec4(tint);
 }

@@ -1,8 +1,10 @@
-
+#version 300 es
 precision mediump float;
-attribute vec4 position;
+
 uniform vec2 resolution;
-varying vec2 texcoord;
+
+in vec4 position;
+out vec2 texcoord;
 
 void main () {
 	texcoord = position.xy * 0.5 + 0.5;
