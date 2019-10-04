@@ -1,12 +1,11 @@
-#version 300 es
 precision mediump float;
+
+attribute vec4 position;
+attribute vec4 seed;
 
 uniform mat4 viewProjection;
 uniform float time;
 uniform vec2 resolution;
-
-in vec4 position;
-in vec4 seed;
 
 const float PI = 3.1415;
 

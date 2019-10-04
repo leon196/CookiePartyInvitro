@@ -1,6 +1,24 @@
-loadFiles(['screen.vert','motion.frag','blur.frag','screen.frag','geometry.vert','geometry.frag'], function(shaders) {
-	const gl = document.getElementById('canvas').getContext('webgl2');
-	if (!gl) { alert("Demo requires WebGL 2.0"); return; }
+loadFiles(['screen.vert','blur.frag','screen.frag','geometry.vert','geometry.frag'], function(shaders) {
+	const gl = document.getElementById('canvas').getContext('webgl');
+
+	// setup motion blur
+	var motionFrames = 3;
+	var uniforms = { motionFrames: motionFrames };
+	var frames = [];
+	var currentFrame = 0;
+	for (var index = 0; index < motionFrames; ++index) {
+		frames.push(twgl.createFramebufferInfo(gl));
+		uniforms['frame'+index] = frames[index].attachments[0]; }
+	shaders['motion.frag'] = 'precision mediump float;\nvarying vec2 texcoord;\nuniform float motionFrames;\nuniform sampler2D '
+	for (var index = 0; index < motionFrames; ++index) 
+		shaders['motion.frag'] += 'frame'+index+',';
+	shaders['motion.frag'] = shaders['motion.frag'].replace(/.$/,";");
+	shaders['motion.frag'] += '\nvoid main() {\ngl_FragColor = vec4(0);'
+	for (var index = 0; index < motionFrames; ++index) 
+		shaders['motion.frag'] += '\ngl_FragColor += texture2D(frame'+index+', texcoord)/motionFrames;'
+	shaders['motion.frag'] += '\n}';
+
+	// materials
 	var materials = {
 		'geometry': 	['geometry.vert', 	'geometry.frag'],
 		'blur': 			['screen.vert', 		'blur.frag'],
@@ -10,31 +28,25 @@ loadFiles(['screen.vert','motion.frag','blur.frag','screen.frag','geometry.vert'
 	Object.keys(materials).forEach(function(key) {
 		materials[key] = twgl.createProgramInfo(gl,
 			[shaders[materials[key][0]],shaders[materials[key][1]]]); });
+
+	// geometry
 	const geometry = twgl.createBufferInfoFromArrays(gl, attributes);
 	const geometryQuad = twgl.createBufferInfoFromArrays(gl, {
 		position:[-1,-1,0,1,-1,0,-1,1,0,-1,1,0,1,-1,0,1,1,0] });
+
+	// camera
 	const divergence = 0.2;
 	var camera = [0,0,6];
 	var target = [0,0,0];
 	var fieldOfView = 50;
 	var projection, cameraLeft, cameraRight;
-	var motionFrames = 1;
-	var uniforms = { motionFrames: motionFrames };
+
+	// framebuffers
 	var frameMotion = twgl.createFramebufferInfo(gl);
 	var frameScreen = twgl.createFramebufferInfo(gl);
 	var frameBlurA = twgl.createFramebufferInfo(gl);
 	var frameBlurB = twgl.createFramebufferInfo(gl);
-	var frames = [];
-	var currentFrame = 0;
-	for (var index = 0; index < motionFrames; ++index) {
-		frames.push(twgl.createFramebufferInfo(gl));
-		uniforms['frame'+index] = frames[index].attachments[0];
-	}
 	var frameToResize = [frameMotion,frameScreen,frameBlurA,frameBlurB].concat(frames);
-	// var frameArray = twgl.createTexture(gl, {
-	// 	target: gl.TEXTURE_2D_ARRAY,
-	// 	src: frames,
-	// });
 
 	
 	function render(elapsed) {
