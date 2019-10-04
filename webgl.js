@@ -51,10 +51,16 @@ loadFiles(['animation.json'], function(animationData) {
 	// blender animation
 	var animations = new blenderHTML5Animations.ActionLibrary(JSON.parse(animationData[Object.keys(animationData)[0]]));
 
+	console.log(mouse)
+
 	function render(elapsed) {
 		elapsed /= 1000;
 
 		elapsed = (elapsed%19);
+
+		if (mouse.clic) {
+			elapsed = 30 * mouse.x / gl.canvas.width;
+		}
 
 		var deltaTime = elapsed - uniforms.time;
 		uniforms.time = elapsed;
