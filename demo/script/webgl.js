@@ -3,6 +3,11 @@
 
 window.onload = function () {
 
+var button = document.getElementById('button');
+button.innerHTML = 'loading';
+
+var music = new Audio('animation/music.mp3');
+
 // shaders file to load
 loadFiles('shader/',['screen.vert','blur.frag','text.vert','screen.frag','geometry.vert','point.vert','tint.frag'], function(shaders) {
 
@@ -37,7 +42,8 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 	const geometryPoint = twgl.createBufferInfoFromArrays(gl, attributesPoint);
 	const geometryQuad = twgl.createBufferInfoFromArrays(gl, {
 		position:[-1,-1,0,1,-1,0,-1,1,0,-1,1,0,1,-1,0,1,1,0] });
-	var geometryTexts = [];
+	var textList = ['cookie.obj','festival.obj','date.obj','landy.obj','shader.obj','beamer.obj','play.obj','concert.obj','workshop.obj','lazer.obj','minitel.obj','cookies.obj','credits.obj'];
+	var geometryTexts = {};
 	var currentText = 0;
 	Object.keys(meshes).forEach(function(item) {
 		var lines = meshes[item].split('\n');
@@ -54,7 +60,7 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 				break;
 			}
 		}
-		geometryTexts.push(twgl.createBufferInfoFromArrays(gl, attributes));
+		geometryTexts[item] = twgl.createBufferInfoFromArrays(gl, attributes);
 	})
 
 	// camera
@@ -71,13 +77,11 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 
 	// blender animation
 	var animations = new blenderHTML5Animations.ActionLibrary(JSON.parse(animationData[Object.keys(animationData)[0]]));
-	// var blenderSocket = new BlenderWebSocket();
 	var timeElapsed = 0;
 	uniforms.time = 0;
 	uniforms.timeRotation = 0;
+	// var blenderSocket = new BlenderWebSocket();
 	// blenderSocket.addListener('time', function(newTime) { timeElapsed = newTime; });
-
-	var music = new Audio('animation/music.mp3');
 
 	function render(elapsed) {
 		// elapsed /= 1000;
@@ -93,7 +97,6 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 		var z = v3.normalize(v3.subtract(camera,target));
 		var x = v3.normalize(v3.cross([0,1,0],z));
 		var y = v3.normalize(v3.cross(z,x));
-		// x = v3.normalize(v3.cross(z,y));
 		var d = divergence;
 		cameraLeft  = m4.lookAt([camera[0]-d*x[0], camera[1]-d*x[1], camera[2]-d*x[2]], target, y);
 		cameraRight = m4.lookAt([camera[0]+d*x[0], camera[1]+d*x[0], camera[2]+d*x[0]], target, y);
@@ -117,12 +120,12 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 		uniforms.viewProjection = m4.multiply(projection, m4.inverse(cameraLeft));
 		draw(materials['geometry'], geometryLine, gl.LINES);
 		draw(materials['point'], geometryPoint, gl.POINTS);
-		draw(materials['text'], geometryTexts[currentText], gl.LINES);
+		draw(materials['text'], geometryTexts[textList[currentText]], gl.LINES);
 		uniforms.tint = [0,1,1,1];
 		uniforms.viewProjection = m4.multiply(projection, m4.inverse(cameraRight));
 		draw(materials['geometry'], geometryLine, gl.LINES);
 		draw(materials['point'], geometryPoint, gl.POINTS);
-		draw(materials['text'], geometryTexts[currentText], gl.LINES);
+		draw(materials['text'], geometryTexts[textList[currentText]], gl.LINES);
 
 		// motion blur
 		currentFrame = (currentFrame+1)%motionFrames;
@@ -195,7 +198,7 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 	function lerp(v0, v1, t) {
 		return v0*(1-t)+v1*t;
 	}
-	/*
+/*
 	// shader hot-reload
 	socket = io('http://localhost:5776');
 	socket.on('change', function(data) { 
@@ -222,19 +225,23 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 			}
 		}
 	});
-	*/
+*/
 	onWindowResize();
 	window.addEventListener('resize', onWindowResize, false);
 	// requestAnimationFrame(render);
 
-	var play = false;
-	var button = document.getElementById('button');
-	button.innerHtml = 'loading';
+	button.innerHTML = 'play';
+	button.style.cursor = 'pointer';
+	button.style.textDecoration = 'underline';
 	button.onclick = function() {
 		music.play();
 		requestAnimationFrame(render);
 		button.style.display = 'none';
 	};
+	music.onended = function() {
+		button.innerHTML = '<a href="https://2019.cookie.paris/">2019.cookie.paris</a>';
+		button.style.display = 'block';
+	}
 });
 });
 });

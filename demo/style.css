@@ -48,7 +48,12 @@ video, audio
   margin: auto;
 }
 
-button {
+#button {
   padding: 10px;
   font-size: 30px;
+  font-family: sans-serif;
+}
+
+a {
+  color: white;
 }
