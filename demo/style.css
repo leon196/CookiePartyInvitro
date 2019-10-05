@@ -13,6 +13,7 @@ body {
 canvas {
 	position:fixed;
 	left: 0;
+  z-index: -1;
 	top: 0;
 	width: 100vw;
 	height: 100vh;
@@ -34,4 +35,20 @@ canvas {
 video, audio
 {
   display: none;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+  width: 100vw;
+  margin: auto;
+}
+
+button {
+  padding: 10px;
+  font-size: 30px;
 }
