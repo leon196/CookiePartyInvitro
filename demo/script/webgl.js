@@ -80,13 +80,13 @@ loadFiles('animation/',textList, function(meshes) {
 	var timeElapsed = 0;
 	uniforms.time = 0;
 	uniforms.timeRotation = 0;
-	// var blenderSocket = new BlenderWebSocket();
-	// blenderSocket.addListener('time', function(newTime) { timeElapsed = newTime; });
+	var blenderSocket = new BlenderWebSocket();
+	blenderSocket.addListener('time', function(newTime) { timeElapsed = newTime; });
 
 	function render(elapsed) {
 		// elapsed /= 1000;
-		// elapsed = timeElapsed;
-		elapsed = music.currentTime;
+		elapsed = timeElapsed;
+		// elapsed = music.currentTime;
 
 		var deltaTime = elapsed - uniforms.time;
 		uniforms.time = elapsed;
@@ -198,7 +198,7 @@ loadFiles('animation/',textList, function(meshes) {
 	function lerp(v0, v1, t) {
 		return v0*(1-t)+v1*t;
 	}
-/*
+
 	// shader hot-reload
 	socket = io('http://localhost:5776');
 	socket.on('change', function(data) { 
@@ -225,11 +225,12 @@ loadFiles('animation/',textList, function(meshes) {
 			}
 		}
 	});
-*/
+
 	onWindowResize();
 	window.addEventListener('resize', onWindowResize, false);
-	// requestAnimationFrame(render);
-
+	requestAnimationFrame(render);
+	button.innerHTML = '';
+/*
 	button.innerHTML = 'play';
 	button.style.cursor = 'pointer';
 	button.style.textDecoration = 'underline';
@@ -244,6 +245,7 @@ loadFiles('animation/',textList, function(meshes) {
 		button.style.display = 'block';
 		document.getElementById('body').style.cursor = 'default';
 	}
+*/
 });
 });
 });
