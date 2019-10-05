@@ -15,7 +15,8 @@ loadFiles('shader/',['screen.vert','blur.frag','text.vert','screen.frag','geomet
 loadFiles('animation/',['animation.json'], function(animationData) {
 
 // texts
-loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shader.obj','beamer.obj','play.obj','concert.obj','workshop.obj','lazer.obj','minitel.obj','cookies.obj','credits.obj'], function(meshes) {
+var textList = ['cookie.obj','festival.obj','date.obj','landy.obj','shader.obj','beamer.obj','play.obj','concert.obj','workshop.obj','dj.obj','lazer.obj','minitel.obj','credits.obj'];
+loadFiles('animation/',textList, function(meshes) {
 
 	const gl = document.getElementById('canvas').getContext('webgl');
 	const v3 = twgl.v3;
@@ -42,7 +43,6 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 	const geometryPoint = twgl.createBufferInfoFromArrays(gl, attributesPoint);
 	const geometryQuad = twgl.createBufferInfoFromArrays(gl, {
 		position:[-1,-1,0,1,-1,0,-1,1,0,-1,1,0,1,-1,0,1,1,0] });
-	var textList = ['cookie.obj','festival.obj','date.obj','landy.obj','shader.obj','beamer.obj','play.obj','concert.obj','workshop.obj','lazer.obj','minitel.obj','cookies.obj','credits.obj'];
 	var geometryTexts = {};
 	var currentText = 0;
 	Object.keys(meshes).forEach(function(item) {
@@ -237,10 +237,12 @@ loadFiles('animation/',['cookie.obj','festival.obj','date.obj','landy.obj','shad
 		music.play();
 		requestAnimationFrame(render);
 		button.style.display = 'none';
+		document.getElementById('body').style.cursor = 'none';
 	};
 	music.onended = function() {
 		button.innerHTML = '<a href="https://2019.cookie.paris/">2019.cookie.paris</a>';
 		button.style.display = 'block';
+		document.getElementById('body').style.cursor = 'default';
 	}
 });
 });
