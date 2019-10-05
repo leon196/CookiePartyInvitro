@@ -10,54 +10,21 @@ loadFiles('shader/',['screen.vert','blur.frag','screen.frag','geometry.vert','ge
 // animation data
 loadFiles('animation/',['animation.json'], function(animationData) {
 
-	// webgl
 	const gl = document.getElementById('canvas').getContext('webgl');
-
-	// setup motion blur
-	var motionFrames = 3;
-	var uniforms = { motionFrames: motionFrames };
+	var uniforms = {};
 	var frames = [];
 	var currentFrame = 0;
-	for (var index = 0; index < motionFrames; ++index) {
-		frames.push(twgl.createFramebufferInfo(gl));
-		uniforms['frame'+index] = frames[index].attachments[0]; }
-	shaders['motion.frag'] = 'precision mediump float;\nvarying vec2 texcoord;\nuniform float motionFrames;\nuniform sampler2D '
-	for (var index = 0; index < motionFrames; ++index) 
-		shaders['motion.frag'] += 'frame'+index+',';
-	shaders['motion.frag'] = shaders['motion.frag'].replace(/.$/,";");
-	shaders['motion.frag'] += '\nvoid main() {\ngl_FragColor = vec4(0);'
-	for (var index = 0; index < motionFrames; ++index) 
-		shaders['motion.frag'] += '\ngl_FragColor += texture2D(frame'+index+', texcoord)/motionFrames;'
-	shaders['motion.frag'] += '\n}';
 
-	// materials
+	setupMotionBlur();
+
 	var materials = {};
 	var materialMap = {
 		'geometry': 	['geometry.vert', 	'geometry.frag'],
 		'blur': 			['screen.vert', 		'blur.frag'],
 		'motion': 		['screen.vert', 		'motion.frag'],
 		'screen': 		['screen.vert', 		'screen.frag'] };
-	Object.keys(materialMap).forEach(function(key) {
-		materials[key] = twgl.createProgramInfo(gl,
-			[shaders[materialMap[key][0]],shaders[materialMap[key][1]]]); });
 
-	var baseUrl = "demo/shader/"
-	socket = io('http://localhost:5776');
-	socket.on('change', function(data) { 
-		if (data.path.lastIndexOf(baseUrl, 0) === 0) {
-			const url = data.path.substr(baseUrl.length);
-			console.log('Reloading ', url);
-			// setTimeout(function(){
-				loadFiles("shader/",[url], function(data) {
-					shaders[url] = data[url];
-					Object.keys(materialMap).forEach(function(key) {
-						materials[key] = twgl.createProgramInfo(gl,
-							[shaders[materialMap[key][0]],shaders[materialMap[key][1]]]);
-					});
-				});
-			// }, 250);
-		}
-	});
+	loadMaterials();
 
 	// geometry
 	const geometry = twgl.createBufferInfoFromArrays(gl, attributes);
@@ -83,8 +50,6 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 	var blenderSocket = new BlenderWebSocket();
 	var timeElapsed = 0;
 	blenderSocket.addListener('time', function(newTime) { timeElapsed = newTime; });
-
-	console.log(mouse)
 
 	function render(elapsed) {
 		elapsed /= 1000;
@@ -162,6 +127,52 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 		projection = twgl.m4.perspective(fieldOfView*Math.PI/180, gl.canvas.width/gl.canvas.height, 0.01, 100.0);
 		uniforms.resolution = [gl.canvas.width, gl.canvas.height];
 	}
+	function loadMaterials() {
+		Object.keys(materialMap).forEach(function(key) {
+			materials[key] = twgl.createProgramInfo(gl,
+				[shaders[materialMap[key][0]],shaders[materialMap[key][1]]]); });
+	}
+	function setupMotionBlur() {
+		uniforms.motionFrames = motionFrames;
+		for (var index = 0; index < motionFrames; ++index) {
+			frames.push(twgl.createFramebufferInfo(gl));
+			uniforms['frame'+index] = frames[index].attachments[0]; }
+		shaders['motion.frag'] = 'precision mediump float;\nvarying vec2 texcoord;\nuniform float motionFrames;\nuniform sampler2D '
+		for (var index = 0; index < motionFrames; ++index) 
+			shaders['motion.frag'] += 'frame'+index+',';
+		shaders['motion.frag'] = shaders['motion.frag'].replace(/.$/,";");
+		shaders['motion.frag'] += '\nvoid main() {\ngl_FragColor = vec4(0);'
+		for (var index = 0; index < motionFrames; ++index) 
+			shaders['motion.frag'] += '\ngl_FragColor += texture2D(frame'+index+', texcoord)/motionFrames;'
+		shaders['motion.frag'] += '\n}';
+	}
+
+	// shader hot-reload
+	socket = io('http://localhost:5776');
+	socket.on('change', function(data) { 
+		if (data.path.includes("demo/shader/")) {
+			const url = data.path.substr("demo/shader/".length);
+			loadFiles("shader/",[url], function(shade) {
+				shaders[url] = shade[url];
+				loadMaterials();
+			});
+		}
+	});
+
+	// animation hot-reload
+	socket = io('http://localhost:5776');
+	socket.on('change', function(data) { 
+		if (data.path.includes("demo/animation/")) {
+			const url = data.path.substr("demo/animation/".length);
+			if (url.substr(url.lastIndexOf('.') + 1) == 'json') {
+				setTimeout(function(){
+					loadFiles("animation/",[url], function(anim) {
+						animations = new blenderHTML5Animations.ActionLibrary(JSON.parse(anim[Object.keys(anim)[0]]));
+					});
+				}, 250);
+			}
+		}
+	});
 	onWindowResize();
 	window.addEventListener('resize', onWindowResize, false);
 	requestAnimationFrame(render);
