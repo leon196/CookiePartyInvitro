@@ -1,6 +1,20 @@
 
 var attributes = {position:[],indices:{numComponents:2,data:[]},seed:{numComponents:4,data:[]}};
 
+var attributesPoint = {position:[],seed:{numComponents:4,data:[]}};
+for (var index = 0; index < pointCount; ++index) {
+	var rnd = [Math.random()*2-1,Math.random()*2-1,Math.random()*2-1];
+	attributesPoint.position.push(0,0,0);
+	attributesPoint.seed.data.push(rnd[0],rnd[1],rnd[2],index/(pointCount-1));
+}
+
+var attributesLine = {position:[],seed:{numComponents:4,data:[]}};
+for (var index = 0; index < lineSegment; ++index) {
+	var rnd = [Math.random()*2-1,Math.random()*2-1,Math.random()*2-1];
+	attributesLine.position.push(rnd[0]*4,rnd[1]*4,rnd[2]*4);
+	attributesLine.seed.data.push(rnd[0],rnd[1],rnd[2],index/(lineSegment-1));
+}
+
 for (var index = 0; index < cubeCount; ++index) {
 	var indices = [0,1,1,3,3,2,2,0,4,5,5,7,7,6,6,4,0,4,1,5,2,6,3,7];
 	var rnd = [Math.random()*2-1,Math.random()*2-1,Math.random()*2-1];

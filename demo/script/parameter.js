@@ -1,10 +1,14 @@
 
 // rendering
-var motionFrames = 3;
+var divergence = 0.2;
+var fieldOfView = 40;
+var motionFrames = 5;
 
 // geometry
-var cubeCount = 20;
-var crossCount = 20;
-var circleCount = 20;
-var glassCount = 20;
+var cubeCount = 30;
+var crossCount = 80;
+var circleCount = 40;
+var glassCount = 40;
 var circleSegment = 16;
+var pointCount = 1000;
+var lineSegment = 100;

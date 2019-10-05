@@ -3,14 +3,34 @@
 
 window.onload = function () {
 
+
 // shaders file to load
-loadFiles('shader/',['screen.vert','blur.frag','screen.frag','geometry.vert','geometry.frag'],
+loadFiles('shader/',['screen.vert','blur.frag','text.vert','screen.frag','geometry.vert','point.vert','tint.frag'],
 	function(shaders) {
 
 // animation data
 loadFiles('animation/',['animation.json'], function(animationData) {
 
+// texts
+loadFiles('animation/',['cookie.obj'], function(meshes) {
+	var lines = meshes['cookie.obj'].split('\n');
+	var attributesText = {position:[],indices:{numComponents:2,data:[]},seed:{numComponents:4,data:[]}};
+	for (var i = 4; i < lines.length; ++i) {
+		if (lines[i][0] == 'v') {
+			var columns = lines[i].split(' ');
+			attributesText.position.push(columns[1], columns[2],columns[3]);
+			attributesText.seed.data.push(Math.random()*2-1,Math.random()*2-1,Math.random()*2-1,i-4);
+		} else if (lines[i][0] == 'l') {
+			var columns = lines[i].split(' ');
+			attributesText.indices.data.push(columns[1]-1, columns[2]-1);
+		} else {
+			break;
+		}
+	}
+
 	const gl = document.getElementById('canvas').getContext('webgl');
+	const v3 = twgl.v3;
+	const m4 = twgl.m4;
 	var uniforms = {};
 	var frames = [];
 	var currentFrame = 0;
@@ -19,7 +39,9 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 
 	var materials = {};
 	var materialMap = {
-		'geometry': 	['geometry.vert', 	'geometry.frag'],
+		'geometry': 	['geometry.vert', 	'tint.frag'],
+		'point': 			['point.vert', 			'tint.frag'],
+		'text': 			['text.vert', 			'tint.frag'],
 		'blur': 			['screen.vert', 		'blur.frag'],
 		'motion': 		['screen.vert', 		'motion.frag'],
 		'screen': 		['screen.vert', 		'screen.frag'] };
@@ -27,15 +49,16 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 	loadMaterials();
 
 	// geometry
-	const geometry = twgl.createBufferInfoFromArrays(gl, attributes);
+	const geometryLine = twgl.createBufferInfoFromArrays(gl, attributes);
+	const geometryPoint = twgl.createBufferInfoFromArrays(gl, attributesPoint);
+	const geometryDFT = twgl.createBufferInfoFromArrays(gl, attributesLine);
+	const geometryText = twgl.createBufferInfoFromArrays(gl, attributesText);
 	const geometryQuad = twgl.createBufferInfoFromArrays(gl, {
 		position:[-1,-1,0,1,-1,0,-1,1,0,-1,1,0,1,-1,0,1,1,0] });
 
 	// camera
-	const divergence = 0.1;
 	var camera = [0,0,6];
 	var target = [0,0,0];
-	var fieldOfView = 40;
 	var projection, cameraLeft, cameraRight;
 
 	// framebuffers
@@ -49,39 +72,77 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 	var animations = new blenderHTML5Animations.ActionLibrary(JSON.parse(animationData[Object.keys(animationData)[0]]));
 	var blenderSocket = new BlenderWebSocket();
 	var timeElapsed = 0;
+	uniforms.time = 0;
+	uniforms.timeRotation = 0;
 	blenderSocket.addListener('time', function(newTime) { timeElapsed = newTime; });
 
 	function render(elapsed) {
 		elapsed /= 1000;
 		elapsed = timeElapsed;
 
-		if (mouse.clic) {
-			elapsed = 30 * mouse.x / gl.canvas.width;
-		}
-
 		var deltaTime = elapsed - uniforms.time;
 		uniforms.time = elapsed;
+		uniforms.timeRotation += deltaTime * getAnimation('rotation-speed', elapsed);
 		
 		camera = animations['camera'].paths['location'].evaluate(elapsed);
 		target = animations['target'].paths['location'].evaluate(elapsed);
-		cameraLeft = twgl.m4.lookAt([-divergence+camera[0], camera[1], camera[2]], target, [0, 1, 0]);
-		cameraRight = twgl.m4.lookAt([divergence+camera[0], camera[1], camera[2]], target, [0, 1, 0]);
+		var z = v3.normalize(v3.subtract(camera,target));
+		var x = v3.normalize(v3.cross(z,[0,1,0]));
+		var d = divergence;
+		cameraLeft  = m4.lookAt([camera[0]-d*x[0], camera[1]-d*x[1], camera[2]-d*x[2]], target, [0, 1, 0]);
+		cameraRight = m4.lookAt([camera[0]+d*x[0], camera[1]+d*x[0], camera[2]+d*x[0]], target, [0, 1, 0]);
+		var fieldOfView = 20+60*getAnimation('fov', elapsed);
+		projection = m4.perspective(fieldOfView*Math.PI/180, gl.canvas.width/gl.canvas.height, 0.01, 100.0);
+		uniforms.camera = camera;
+		uniforms.target = target;
+		uniforms.fade = getAnimation('fade', elapsed);
+		uniforms.expansion = getAnimation('expansion', elapsed);
+		uniforms.growth = getAnimation('growth', elapsed);
 
 		// anaglyph geometry
 		gl.bindFramebuffer(gl.FRAMEBUFFER, frames[currentFrame].framebuffer);
 		gl.clearColor(0,0,0,1);
 		gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.ONE, gl.ONE);
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+		// gizmos
 		gl.useProgram(materials['geometry'].program);
-		twgl.setBuffersAndAttributes(gl, materials['geometry'], geometry);
+		twgl.setBuffersAndAttributes(gl, materials['geometry'], geometryLine);
 		uniforms.tint = [1,0,0,1];
-		uniforms.viewProjection = twgl.m4.multiply(projection, twgl.m4.inverse(cameraLeft));
+		uniforms.viewProjection = m4.multiply(projection, m4.inverse(cameraLeft));
 		twgl.setUniforms(materials['geometry'], uniforms);
-		twgl.drawBufferInfo(gl, geometry, gl.LINES);
+		twgl.drawBufferInfo(gl, geometryLine, gl.LINES);
 		uniforms.tint = [0,1,1,1];
-		uniforms.viewProjection = twgl.m4.multiply(projection, twgl.m4.inverse(cameraRight));
+		uniforms.viewProjection = m4.multiply(projection, m4.inverse(cameraRight));
 		twgl.setUniforms(materials['geometry'], uniforms);
-		twgl.drawBufferInfo(gl, geometry, gl.LINES);
+		twgl.drawBufferInfo(gl, geometryLine, gl.LINES);
+
+		// points
+		gl.useProgram(materials['point'].program);
+		twgl.setBuffersAndAttributes(gl, materials['point'], geometryPoint);
+		uniforms.tint = [1,0,0,1];
+		uniforms.viewProjection = m4.multiply(projection, m4.inverse(cameraLeft));
+		twgl.setUniforms(materials['point'], uniforms);
+		twgl.drawBufferInfo(gl, geometryPoint, gl.POINTS);
+		uniforms.tint = [0,1,1,1];
+		uniforms.viewProjection = m4.multiply(projection, m4.inverse(cameraRight));
+		twgl.setUniforms(materials['point'], uniforms);
+		twgl.drawBufferInfo(gl, geometryPoint, gl.POINTS);
+
+		if (animations['title'].paths['location'].evaluate(elapsed)[0] > 0.5) {
+			gl.useProgram(materials['text'].program);
+			twgl.setBuffersAndAttributes(gl, materials['text'], geometryText);
+			uniforms.tint = [1,0,0,1];
+			uniforms.viewProjection = m4.multiply(projection, m4.inverse(cameraLeft));
+			twgl.setUniforms(materials['text'], uniforms);
+			twgl.drawBufferInfo(gl, geometryText, gl.LINES);
+			uniforms.tint = [0,1,1,1];
+			uniforms.viewProjection = m4.multiply(projection, m4.inverse(cameraRight));
+			twgl.setUniforms(materials['text'], uniforms);
+			twgl.drawBufferInfo(gl, geometryText, gl.LINES);
+		}
 
 		// motion blur
 		currentFrame = (currentFrame+1)%motionFrames;
@@ -124,7 +185,6 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 		twgl.resizeCanvasToDisplaySize(gl.canvas);
 		for (var index = 0; index < frameToResize.length; ++index)
 			twgl.resizeFramebufferInfo(gl, frameToResize[index]);
-		projection = twgl.m4.perspective(fieldOfView*Math.PI/180, gl.canvas.width/gl.canvas.height, 0.01, 100.0);
 		uniforms.resolution = [gl.canvas.width, gl.canvas.height];
 	}
 	function loadMaterials() {
@@ -146,7 +206,12 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 			shaders['motion.frag'] += '\ngl_FragColor += texture2D(frame'+index+', texcoord)/motionFrames;'
 		shaders['motion.frag'] += '\n}';
 	}
-
+	function getAnimation(name, elapsed) {
+		return animations[name].paths['location'].evaluate(elapsed)[0];
+	}
+	function lerp(v0, v1, t) {
+		return v0*(1-t)+v1*t;
+	}
 	// shader hot-reload
 	socket = io('http://localhost:5776');
 	socket.on('change', function(data) { 
@@ -173,9 +238,11 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 			}
 		}
 	});
+
 	onWindowResize();
 	window.addEventListener('resize', onWindowResize, false);
 	requestAnimationFrame(render);
+});
 });
 });
 }

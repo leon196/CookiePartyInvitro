@@ -50,5 +50,5 @@ void main() {
   if (flip) {
     uv.y = 1.0 - uv.y;
   }
-	gl_FragColor = blur13(frame, uv, resolution, direction);
+	gl_FragColor = blur5(frame, uv, resolution, direction);
 }
