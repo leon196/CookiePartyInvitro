@@ -84,9 +84,15 @@ loadFiles('animation/',['animation.json'], function(animationData) {
 	var timeElapsed = 0;
 	blenderSocket.addListener('time', function(newTime) { timeElapsed = newTime; });
 
+	console.log(mouse)
+
 	function render(elapsed) {
 		elapsed /= 1000;
 		elapsed = timeElapsed;
+
+		if (mouse.clic) {
+			elapsed = 30 * mouse.x / gl.canvas.width;
+		}
 
 		var deltaTime = elapsed - uniforms.time;
 		uniforms.time = elapsed;
